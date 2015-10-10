@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int RC_SIGN_IN = 0;
 
     /* Client used to interact with Google APIs. */
-    private GoogleApiClient mGoogleApiClient;
+    private static GoogleApiClient mGoogleApiClient;
 
     /* Is there a ConnectionResult resolution in progress? */
     private boolean mIsResolving = false;
@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements
         int id = item.getItemId();
 
         if (id == R.id.logout) {
-            onSignOutClicked();
             return true;
         }
 
@@ -102,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onClick(View v) {
-        Log.d("Came in On Click", "Clicked the button");
+        Log.d("Came in On Click","Clicked the button");
         if (v.getId() == R.id.sign_in_button) {
             onSignInClicked();
         }
@@ -178,5 +177,8 @@ public class MainActivity extends AppCompatActivity implements
         //ShowSignedOutUI
     }
 
+    public static GoogleApiClient getClient(){
+        return  mGoogleApiClient;
+    }
 
 }
