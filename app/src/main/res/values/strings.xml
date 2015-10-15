@@ -3,8 +3,10 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-    <string name="logout">logout</string>
+    <string name="logout">LOGOUT</string>
     <string name="title_activity_home">HomeActivity</string>
+    <string name="search">Search</string>
+    <string name="failed">Failed to initialize Youtube Player</string>
 
 <!-- TODO: Remove or change this placeholder text -->
     <string name="search_fragment">Hello search fragment</string>

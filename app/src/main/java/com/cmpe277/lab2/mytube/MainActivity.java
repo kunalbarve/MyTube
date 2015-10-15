@@ -2,6 +2,7 @@ package com.cmpe277.lab2.mytube;
 
 import android.content.Intent;
 import android.content.IntentSender;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,11 +10,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.cmpe277.lab2.mytube.Utility.Constatnts;
+import com.cmpe277.lab2.mytube.Utility.SessionManager;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.plus.Plus;
+
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
@@ -24,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int RC_SIGN_IN = 0;
 
     /* Client used to interact with Google APIs. */
-    private static GoogleApiClient mGoogleApiClient;
+    private GoogleApiClient mGoogleApiClient;
 
     /* Is there a ConnectionResult resolution in progress? */
     private boolean mIsResolving = false;
@@ -32,23 +41,29 @@ public class MainActivity extends AppCompatActivity implements
     /* Should we automatically resolve ConnectionResults when possible? */
     private boolean mShouldResolve = false;
 
+    private SessionManager session;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        Log.d("Came in create------>","Try may be successful");
+        Log.d("Came in create------>", "Try may be successful");
 
-        findViewById(R.id.sign_in_button).setOnClickListener(this);
+       session = new SessionManager(getApplicationContext());
 
-        // Build GoogleApiClient with access to basic profile
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(Plus.API)
-                .addScope(new Scope(Scopes.PROFILE))
-                .addScope(new Scope(Scopes.EMAIL))
-                .build();
+        if(session.checkLogin()){
+            finish();
+        }else{
+            setContentView(R.layout.activity_main);
+            findViewById(R.id.sign_in_button).setOnClickListener(this);
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(Plus.API)
+                    .addScope(new Scope(Scopes.PROFILE))
+                    .addScope(new Scope(Scopes.EMAIL))
+                    .build();
+        }
     }
 
     @Override
@@ -77,7 +92,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStop() {
         super.onStop();
-        mGoogleApiClient.disconnect();
+        if (mGoogleApiClient.isConnected())
+            mGoogleApiClient.disconnect();
     }
 
     @Override
@@ -87,10 +103,22 @@ public class MainActivity extends AppCompatActivity implements
         // establish a service connection to Google Play services.
         mShouldResolve = false;
 
-        Log.d("Hash","Connected");
-
-        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-        startActivity(intent);
+        Log.d("MYTUBE", "Is loggedin" + session.isLoggedIn() + ":" + session.isDisconnected());
+        if(!session.isLoggedIn() && session.isDisconnected()){
+            Log.d("MYTUBE", "inside if before:" + session.isLoggedIn() + ":" + session.isDisconnected());
+            session.setIsDisconnected(false);
+            Log.d("MYTUBE", "inside if before:" + session.isLoggedIn() + ":" + session.isDisconnected());
+            session.createLoginSession("Test", "Test@mail");
+            //new Connection().execute("");
+            //new GetToken().execute("");
+            finish();
+        }else{
+            Log.d("MYTUBE", "inside else");
+            onSignOutClicked();
+            Log.d("MYTUBE", "Before:"+session.isDisconnected());
+            session.setIsDisconnected(true);
+            Log.d("MYTUBE", "After:"+session.isDisconnected());
+        }
     }
 
     @Override
@@ -98,10 +126,123 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+    private class Connection extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+            URL url = null;
+            HttpsURLConnection urlConnection = null;
+            try {
+                url = new URL(Constatnts.requestAccessUrl());
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                Log.d("MYTUBE","Result>>>"+convertStreamToString(in));
+
+            }catch (Exception e){
+                Log.e("MYTUBE","EXCEPTION",e);
+            }finally {
+                urlConnection.disconnect();
+            }
+            return "Executed";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+        }
+
+        @Override
+        protected void onPreExecute() {}
+
+        @Override
+        protected void onProgressUpdate(Void... values) {}
+    }
+
+    private class GetToken extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+            try{
+                String urlParameters  = Constatnts.requestTokenParameters();
+                byte[] postData       = urlParameters.getBytes("UTF-8");
+                int    postDataLength = postData.length;
+                String request        = Constatnts.ACCESS_TOKEN_URL;
+
+                URL url = new URL(request);
+                HttpURLConnection conn= (HttpURLConnection) url.openConnection();
+                conn.setDoOutput( true );
+                conn.setInstanceFollowRedirects(false);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setRequestProperty( "charset", "utf-8");
+                conn.setRequestProperty( "Content-Length", Integer.toString( postDataLength ));
+                conn.setUseCaches(false);
+                DataOutputStream wr = new DataOutputStream( conn.getOutputStream());
+                wr.write(postData);
+
+                wr.flush ();
+                wr.close ();
+
+                //Get Response
+                InputStream is = conn.getInputStream();
+                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                String line;
+                StringBuffer response = new StringBuffer();
+                while((line = rd.readLine()) != null) {
+                    response.append(line);
+                    response.append('\r');
+                }
+                rd.close();
+                Log.d("MYTUBE", "Result>>>" + response.toString());
+
+//                InputStream in = conn.getInputStream();
+//                Log.d("MYTUBE", "Result>>>" + convertStreamToString(in));
+            }catch (Exception e){
+                Log.e("MYTUBE","TOKEN EXCEPTION",e);
+            }
+
+
+            return "Executed";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+        }
+
+        @Override
+        protected void onPreExecute() {}
+
+        @Override
+        protected void onProgressUpdate(Void... values) {}
+    }
+
+    public void getCode(){
+
+    }
+
+    public static String convertStreamToString(InputStream inputStream) throws IOException {
+        if (inputStream != null) {
+            Writer writer = new StringWriter();
+
+            char[] buffer = new char[1024];
+            try {
+                Reader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"),1024);
+                int n;
+                while ((n = reader.read(buffer)) != -1) {
+                    writer.write(buffer, 0, n);
+                }
+            } finally {
+                inputStream.close();
+            }
+            return writer.toString();
+        } else {
+            return "EMPTY";
+        }
+    }
+
 
     @Override
     public void onClick(View v) {
-        Log.d("Came in On Click","Clicked the button");
+        Log.d("Came in On Click", "Clicked the button");
         if (v.getId() == R.id.sign_in_button) {
             onSignInClicked();
         }
@@ -177,8 +318,5 @@ public class MainActivity extends AppCompatActivity implements
         //ShowSignedOutUI
     }
 
-    public static GoogleApiClient getClient(){
-        return  mGoogleApiClient;
-    }
 
 }

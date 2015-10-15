@@ -6,10 +6,12 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 
+import com.cmpe277.lab2.mytube.Utility.SessionManager;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.plus.Plus;
 
@@ -20,12 +22,14 @@ public class HomeActivity extends AppCompatActivity implements ActionBar.TabList
     private android.support.v7.app.ActionBar actionBar;
     // Tab titles
     private String[] tabs = { "Home", "Favorite"};
-
+    private SessionManager session;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        session = new SessionManager(getApplicationContext());
 
         // Initilization
         viewPager = (ViewPager) findViewById(R.id.pager);
@@ -59,15 +63,10 @@ public class HomeActivity extends AppCompatActivity implements ActionBar.TabList
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.logout) {
-            GoogleApiClient mGoogleApiClient = MainActivity.getClient();
-            if (mGoogleApiClient.isConnected()) {
-                Plus.AccountApi.clearDefaultAccount(mGoogleApiClient);
-                mGoogleApiClient.disconnect();
-            }
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            Log.d("MYTUBE", "Before logout"+session.isLoggedIn());
+            session.logoutUser();
             finish();
-
+            Log.d("MYTUBE", "After logout" + session.isLoggedIn());
             return true;
         }
 
