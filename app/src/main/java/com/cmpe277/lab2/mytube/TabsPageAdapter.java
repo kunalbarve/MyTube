@@ -2,34 +2,33 @@ package com.cmpe277.lab2.mytube;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 
-/**
- * Created by knbarve on 10/9/15.
- */
+public class TabsPageAdapter extends FragmentStatePagerAdapter {
+    int mNumOfTabs;
 
-public class TabsPageAdapter extends FragmentPagerAdapter {
-
-    public TabsPageAdapter(FragmentManager fm) {
+    public TabsPageAdapter(FragmentManager fm, int NumOfTabs) {
         super(fm);
+        this.mNumOfTabs = NumOfTabs;
     }
 
     @Override
     public Fragment getItem(int position) {
+
         switch (position) {
             case 0:
-                // Top Rated fragment activity
-                return new SearchFragment();
+                SearchFragment tab1 = new SearchFragment();
+                return tab1;
             case 1:
-                // Games fragment activity
-                return new FavoriteFragment();
+                FavoriteFragment tab2 = new FavoriteFragment();
+                return tab2;
+            default:
+                return null;
         }
-
-        return null;
     }
 
     @Override
     public int getCount() {
-        return 2;
+        return mNumOfTabs;
     }
 }

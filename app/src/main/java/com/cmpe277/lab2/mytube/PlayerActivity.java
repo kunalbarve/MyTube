@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.cmpe277.lab2.mytube.Utility.Constatnts;
 import com.google.android.youtube.player.YouTubeBaseActivity;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
@@ -24,7 +25,7 @@ public class PlayerActivity extends YouTubeBaseActivity implements YouTubePlayer
         setContentView(R.layout.activity_player);
 
         playerView = (YouTubePlayerView)findViewById(R.id.player_view);
-        playerView.initialize(YoutubeConnector.KEY, this);
+        playerView.initialize(Constatnts.YOUTUBE_KEY, this);
     }
 
     @Override
