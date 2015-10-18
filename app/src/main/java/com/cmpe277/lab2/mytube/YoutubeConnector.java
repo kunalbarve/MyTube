@@ -13,8 +13,13 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Playlist;
+import com.google.api.services.youtube.model.PlaylistItem;
+import com.google.api.services.youtube.model.PlaylistItemListResponse;
+import com.google.api.services.youtube.model.PlaylistItemSnippet;
+import com.google.api.services.youtube.model.PlaylistListResponse;
 import com.google.api.services.youtube.model.PlaylistSnippet;
 import com.google.api.services.youtube.model.PlaylistStatus;
+import com.google.api.services.youtube.model.ResourceId;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
@@ -22,55 +27,33 @@ import com.google.api.services.youtube.model.VideoListResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 
 public class YoutubeConnector {
-    private YouTube youTube;
     private static YouTube youtube;
-    private static YouTube.Search.List query;
-    private static SessionManager session;
+    private YouTube.Search.List query;
+    private SessionManager session;
     private static String accessToken;
 
-    private static void setUpYouTube() {
-        youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-            @Override
-            public void initialize(HttpRequest hr) throws IOException {
-            }
-        }).setApplicationName(Constatnts.APPLICATION_NAME).build();
-    }
-
-    private static void resetYoutube(Context context) {
+    public YoutubeConnector(Context context) {
         session = new SessionManager(context);
-        accessToken = "ya29.DwKATt7FUU-YjRc9jFpqNH-7eBJ1qwwCZAyn9VvWOX_EDl5_hYHlPJrrC7R67hwp6hsi";
+        accessToken = session.getToken();
         Log.d(Constatnts.TAG, "Token:" + accessToken);
         GoogleCredential credential = new GoogleCredential().setAccessToken(accessToken);
         youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), credential).setApplicationName(Constatnts.APPLICATION_NAME).build();
     }
 
-
-    public YoutubeConnector(Context context) {
-
-      /*  session = new SessionManager(context);
-        accessToken = session.getToken();
-        Log.d(Constatnts.TAG, "Token:"+accessToken);
-        GoogleCredential credential = new GoogleCredential().setAccessToken(accessToken);
-        youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), credential).setApplicationName(Constatnts.APPLICATION_NAME).build();*/
-    }
-
-    public static List<VideoItem> search(String keywords, Context context) {
-        Log.d(Constatnts.TAG, "Query" + keywords);
-
+    //m-GK8hgfWKc, rhWFs0QVIgU, 7xevFud9lzg
+    public List<VideoItem> search(String keywords) {
         try {
-            setUpYouTube();
             query = youtube.search().list("id,snippet");
             query.setKey(Constatnts.YOUTUBE_KEY);
             query.setType("video");
             query.setMaxResults(Constatnts.NUMBER_OF_VIDEOS_RETURNED);
-            query.setFields("items(id/videoId,snippet/title,snippet/description,snippet/thumbnails/default/url,snippet/publishedAt)");
-            //query.setFields("items(id/videoId)");
+            query.setFields("items(id/videoId)");
             query.setQ(keywords);
-            //SearchListResponse response = query.setKey(Constatnts.YOUTUBE_KEY).setOauthToken(accessToken).execute();
             SearchListResponse response = query.execute();
 
             List<SearchResult> searchResultList = response.getItems();
@@ -80,27 +63,20 @@ public class YoutubeConnector {
             List<String> videoIds = new ArrayList<String>();
 
             if (searchResultList != null) {
-                Log.d(Constatnts.TAG, "My Search Size" + searchResultList.size());
-                items = createItemUsingSearch(searchResultList.iterator());
-                //getVideos(searchResultList, context);
-                createPlayList(context);
-                /*for (SearchResult searchResult : searchResultList) {
+
+                for (SearchResult searchResult : searchResultList) {
                     videoIds.add(searchResult.getId().getVideoId());
                 }
                 Joiner stringJoiner = Joiner.on(',');
                 String videoId = stringJoiner.join(videoIds);
 
-                Log.d(Constatnts.TAG, "Video Ids" + videoId);
-
                 YouTube.Videos.List listVideosRequest = youtube.videos().list("snippet, statistics, id").setId(videoId);
-                VideoListResponse listResponse = listVideosRequest.setKey(Constatnts.YOUTUBE_KEY).setOauthToken(accessToken).execute();
+                VideoListResponse listResponse = listVideosRequest.execute();
                 List<Video> videoList = listResponse.getItems();
 
-                Log.d(Constatnts.TAG, "My Videos Size" + videoList.size());
-
                 if (videoList != null) {
-                    return createItems(videoList.iterator());
-                }*/
+                    items = getVideoDetails(videoList.iterator(), "SEARCH");
+                }
             }
 
             return items;
@@ -110,102 +86,147 @@ public class YoutubeConnector {
         }
     }
 
-    public static void getVideos(List<SearchResult> searchResultList, Context context) {
-        resetYoutube(context);
+    public List<VideoItem> getVideoDetails(Iterator<Video> iteratorVideoResults, String mode) throws Exception {
+        List<VideoItem> items = new ArrayList<>();
+
+        while (iteratorVideoResults.hasNext()) {
+            Video singleVideo = iteratorVideoResults.next();
+
+            VideoItem item = new VideoItem();
+            item.setTitle(singleVideo.getSnippet().getTitle());
+            item.setDescription("");
+            item.setThumbnailURL(singleVideo.getSnippet().getThumbnails().getDefault().getUrl());
+            item.setId(singleVideo.getId());
+            item.setPublishDate(singleVideo.getSnippet().getPublishedAt().toString());
+            item.setViewCount(singleVideo.getStatistics().getViewCount().intValue());
+            item.setLikeCount(singleVideo.getStatistics().getLikeCount().intValue());
+            item.setDislikeCount(singleVideo.getStatistics().getDislikeCount().intValue());
+
+            if (mode.equalsIgnoreCase("SEARCH")) {
+                item.setIsFavorite(false);
+            } else {
+                item.setIsFavorite(true);
+            }
+
+            items.add(item);
+        }
+        return items;
+    }
+
+    public String getPlayListDetail() throws Exception {
+        String playListId = "";
+
+        YouTube.Playlists.List channels = youtube.playlists().list("snippet").setMine(true);
+        PlaylistListResponse channelDetail = channels.execute();
+
+        if (channelDetail.getItems().size() > 0) {
+            for (Playlist playList : channelDetail.getItems()) {
+                if (playList.getSnippet().getTitle().equalsIgnoreCase(Constatnts.PLAYLIST_NAME)) {
+                    playListId = playList.getId();
+                    break;
+                }
+            }
+        }
+
+        if (playListId.equalsIgnoreCase("")) {
+            playListId = createPlayList();
+        }
+
+        return playListId;
+    }
+
+    public String createPlayList() throws Exception {
+        String createdId = "";
+        PlaylistSnippet playListObj = new PlaylistSnippet();
+        playListObj.setTitle(Constatnts.PLAYLIST_NAME);
+        playListObj.setDescription("Playlist created for using MyTube for CMPE 277 class.");
+
+        PlaylistStatus status = new PlaylistStatus();
+        status.setPrivacyStatus("private");
+
+        Playlist playList = new Playlist();
+        playList.setSnippet(playListObj);
+        playList.setStatus(status);
+
+        YouTube.Playlists.Insert insert = youtube.playlists().insert("snippet,status", playList);
+        Playlist insertedPlayList = insert.execute();
+        createdId = insertedPlayList.getId();
+        Log.d(Constatnts.TAG, "Id:" + insertedPlayList.getId());
+
+        return createdId;
+    }
+
+    public void insertVideo(String videoId) throws Exception {
+        String playListId = getPlayListDetail();
+
+        ResourceId resource = new ResourceId();
+        resource.setKind("youtube#video");
+        resource.setVideoId(videoId);
+
+        PlaylistItemSnippet snippet = new PlaylistItemSnippet();
+        snippet.setTitle("");
+        snippet.setPlaylistId(playListId);
+        snippet.setResourceId(resource);
+
+        PlaylistItem item = new PlaylistItem();
+        item.setSnippet(snippet);
+
+        YouTube.PlaylistItems.Insert insertVideo = youtube.playlistItems().insert("snippet,contentDetails", item);
+        insertVideo.execute();
+    }
+
+    public void removeVideos(List<String> videoIds) throws Exception {
+        List<PlaylistItem> playListItems = getPlayListItems();
+        for (PlaylistItem item : playListItems) {
+            if (videoIds.contains(item.getContentDetails().getVideoId())) {
+                YouTube.PlaylistItems.Delete deleteVideo = youtube.playlistItems().delete(item.getId());
+                deleteVideo.execute();
+            }
+        }
+    }
+
+    public List<PlaylistItem> getPlayListItems() throws Exception {
+        String playListId = getPlayListDetail();
+
+        List<PlaylistItem> playlistItemList = new ArrayList<PlaylistItem>();
+
+        YouTube.PlaylistItems.List playlistItemRequest =
+                youtube.playlistItems().list("id,contentDetails,snippet");
+        playlistItemRequest.setPlaylistId(playListId);
+        playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title,snippet/publishedAt),nextPageToken,pageInfo");
+
+        String nextToken = "";
+
+        do {
+            playlistItemRequest.setPageToken(nextToken);
+            PlaylistItemListResponse playlistItemResult = playlistItemRequest.execute();
+            playlistItemList.addAll(playlistItemResult.getItems());
+            nextToken = playlistItemResult.getNextPageToken();
+        } while (nextToken != null);
+
+        return playlistItemList;
+    }
+
+    public List<VideoItem> getFavoriteVideos() throws Exception {
+        List<PlaylistItem> videoItems = getPlayListItems();
+        List<VideoItem> items = new ArrayList<VideoItem>();
         List<String> videoIds = new ArrayList<String>();
-        try {
-            for (SearchResult searchResult : searchResultList) {
-                videoIds.add(searchResult.getId().getVideoId());
-            }
-            Joiner stringJoiner = Joiner.on(',');
-            String videoId = stringJoiner.join(videoIds);
 
-            Log.d(Constatnts.TAG, "Video Ids" + videoId);
-
-            YouTube.Videos.List listVideosRequest = youtube.videos().list("snippet, statistics, id").setId(videoId);
-            VideoListResponse listResponse = listVideosRequest.setKey(Constatnts.YOUTUBE_KEY).setOauthToken(accessToken).execute();
-            List<Video> videoList = listResponse.getItems();
-
-            Log.d(Constatnts.TAG, "My Videos Size" + videoList.size());
-
-
-        } catch (Exception e) {
-            Log.e(Constatnts.TAG, "Error in Video getting: ", e);
+        for (PlaylistItem playListItem : videoItems) {
+            videoIds.add(playListItem.getContentDetails().getVideoId());
         }
-    }
+        Joiner stringJoiner = Joiner.on(',');
+        String videoIdString = stringJoiner.join(videoIds);
 
-    public List<VideoItem> createItems(Iterator<Video> iteratorVideoResults) {
-        List<VideoItem> items = new ArrayList<>();
+        YouTube.Videos.List listVideosRequest = youtube.videos().list("snippet, statistics, id").setId(videoIdString);
+        VideoListResponse listResponse = listVideosRequest.execute();
+        List<Video> videoList = listResponse.getItems();
 
-        try {
-            while (iteratorVideoResults.hasNext()) {
-                Video singleVideo = iteratorVideoResults.next();
-
-                VideoItem item = new VideoItem();
-                item.setTitle(singleVideo.getSnippet().getTitle());
-                item.setDescription(singleVideo.getSnippet().getDescription());
-                item.setThumbnailURL(singleVideo.getSnippet().getThumbnails().getDefault().getUrl());
-                item.setId(singleVideo.getId());
-                item.setPublishDate(singleVideo.getSnippet().getPublishedAt().toString());
-                item.setViewCount(singleVideo.getStatistics().getViewCount().intValue());
-                item.setLikeCount(singleVideo.getStatistics().getLikeCount().intValue());
-                item.setDislikeCount(singleVideo.getStatistics().getDislikeCount().intValue());
-                Log.d(Constatnts.TAG, "Video Detail>>>>" + item.toString());
-                items.add(item);
-            }
-        } catch (Exception e) {
-            Log.e(Constatnts.TAG, "error in video iteration ", e);
-            return items;
+        if (videoList != null) {
+            items = getVideoDetails(videoList.iterator(), "FAVORITE");
         }
 
         return items;
     }
 
-    public static List<VideoItem> createItemUsingSearch(Iterator<SearchResult> searchIterator) {
-        List<VideoItem> items = new ArrayList<>();
-
-        try {
-            while (searchIterator.hasNext()) {
-                SearchResult searchResult = searchIterator.next();
-
-                VideoItem item = new VideoItem();
-                item.setTitle(searchResult.getSnippet().getTitle());
-                item.setDescription(searchResult.getSnippet().getDescription());
-                item.setThumbnailURL(searchResult.getSnippet().getThumbnails().getDefault().getUrl());
-                item.setId(searchResult.getId().getVideoId());
-                item.setPublishDate(searchResult.getSnippet().getPublishedAt().toString());
-                //Log.d("MYTUBE","Search Item Detail>>>>"+item.toString());
-                items.add(item);
-            }
-        } catch (Exception e) {
-            Log.e(Constatnts.TAG, "error in search iteration ", e);
-            return items;
-        }
-
-        return items;
-    }
-
-    public static void createPlayList(Context context) {
-        try {
-            resetYoutube(context);
-            PlaylistSnippet playListObj = new PlaylistSnippet();
-            playListObj.setTitle("SJSU");
-            playListObj.setDefaultLanguage("Test");
-
-            PlaylistStatus status = new PlaylistStatus();
-            status.setPrivacyStatus("private");
-
-            Playlist playList = new Playlist();
-            playList.setSnippet(playListObj);
-            playList.setStatus(status);
-
-            YouTube.Playlists.Insert insert = youtube.playlists().insert("snippet,status", playList);
-            Playlist insertedPlayList = insert.setKey(Constatnts.YOUTUBE_KEY).setOauthToken(accessToken).execute();
-            Log.d(Constatnts.TAG, "Id:"+insertedPlayList.getId());
-        } catch (Exception e) {
-            Log.e(Constatnts.TAG, "error in list creation ", e);
-        }
-
-
-    }
 }

@@ -1,7 +1,4 @@
 package com.cmpe277.lab2.mytube.Utility;
-
-import android.util.Log;
-
 import com.google.android.gms.common.Scopes;
 import com.google.api.services.youtube.YouTubeScopes;
 
@@ -10,39 +7,19 @@ import com.google.api.services.youtube.YouTubeScopes;
  */
 public class Constatnts {
 
-    public static final String GET_CODE_URL = "https://accounts.google.com/o/oauth2/auth";
-    public static final String CLIENT_ID = "903211392493-avd6qjioo2en1iddn4ju5glu4leap0dc.apps.googleusercontent.com";
-    public static final String REDIRECT_URI = "http%3A%2F%2Flocalhost%2Foauth2callback";
-    public static final String RESPONSE_TYPE = "code";
-    public static final String SCOPE = "https://www.googleapis.com/auth/youtube";
-    public static final String ACCESS_TYPE = "offline";
-    public static final String CLIENT_SECRET = "";
-    public static final String GRANT_TYPE = "authorization_code";
-    public static final String ACCESS_TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
-    public static final String RECEIVED_CODE = "4/kyz8bj2_Hdf5DAcOE1V2KyZQfrR-eNURZQ3PyZ4nhHI#";
-
     public static final String TAG = "MyTube";
+
+    public static final String PLAYLIST_NAME = "SJSU-CMPE-277";
+
     public static final String APPLICATION_NAME = "MyTube";
 
-    public static final String YOUTUBE_KEY
-            = "AIzaSyBPoiJ7VGUs8CvDmChWJ0eBG8y4Jx9_h0U";
+    public static final String YOUTUBE_KEY = "AIzaSyAMOxuDarPvl1qTa6MmWATzvnR-tZW0n2w";
+
     public static final long NUMBER_OF_VIDEOS_RETURNED = 30;
 
     public static final String SCOPE_STRING = "oauth2:" + Scopes.PROFILE + " " + YouTubeScopes.YOUTUBE + " " + YouTubeScopes.YOUTUBE_UPLOAD + " " + Scopes.EMAIL;
 
     public static final String INITIAL_SEARCH_WORD = "Latest Technology 2015";
 
-    public static String requestAccessUrl(){
-        String url = GET_CODE_URL+"?client_id="+CLIENT_ID+"&redirect_uri="+REDIRECT_URI+"&scope="+SCOPE+"&response_type="+RESPONSE_TYPE+"&access_type="+ACCESS_TYPE;
-
-        Log.d(TAG, "URL>>>>"+url);
-        return  url;
-    }
-
-    public static String requestTokenParameters(){
-        String params = "code="+RECEIVED_CODE+"&client_id="+CLIENT_ID+"&client_secret="+CLIENT_SECRET+"&redirect_uri="+REDIRECT_URI+"&grant_type="+GRANT_TYPE;
-        Log.d("MYTUBE", "ACCESS TOKEN URL>>>>"+params);
-        return params;
-    }
 
 }

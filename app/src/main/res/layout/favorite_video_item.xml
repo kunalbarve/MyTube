@@ -37,15 +37,6 @@
         android:textColor="#666666"
         android:textSize="14sp" />
 
-    <ImageButton android:id="@+id/favorite"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:src="@android:drawable/btn_star_big_off"
-        android:background="#00ffffff"
-        />
-
     <TextView
         android:id="@+id/publish_date"
         android:layout_width="wrap_content"

@@ -78,7 +78,8 @@ public class SearchFragment extends Fragment {
     private void searchOnYoutube(final String keywords){
         new Thread(){
             public void run(){
-                searchResults = YoutubeConnector.search(keywords, context);
+                YoutubeConnector yc = new YoutubeConnector(context);
+                searchResults = yc.search(keywords);
                 handler.post(new Runnable(){
                     public void run(){
                         updateVideosFound();
@@ -126,11 +127,9 @@ public class SearchFragment extends Fragment {
                 });
 
                 VideoItem item = searchResults.get(position);
-                item.setIsFavorite(false);
-
                 Picasso.with(context).load(item.getThumbnailURL()).into(thumbnail);
                 title.setText(item.getTitle());
-                viewCounts.setText("Views: 207");
+                viewCounts.setText("Views: "+item.getViewCount());
                 publishDate.setText(item.getPublishDate());
                 //description.setText(searchResult.getDescription());
                 return convertView;

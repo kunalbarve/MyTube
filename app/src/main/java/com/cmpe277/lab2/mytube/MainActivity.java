@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.SyncStateContract;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -41,8 +40,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
 
         session = new SessionManager(getApplicationContext());
-
-        //Constatnts.requestAccessUrl();
 
         if(session.checkLogin()){
             finish();
@@ -82,10 +79,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQ_SIGN_IN_REQUIRED) {
-            Log.d("Came in Response >>","Bad Luck Bro"+resultCode);
-            /*Bundle extra = data.getExtras();
-            String oneTimeToken = extra.getString("authtoken");
-            Log.d("MYTUBE", "One TimeToken"+oneTimeToken);*/
             new GetAccessToken().execute("");
         }
 
