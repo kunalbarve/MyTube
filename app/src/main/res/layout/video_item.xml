@@ -37,13 +37,22 @@
         android:textColor="#666666"
         android:textSize="14sp" />
 
-    <ImageButton android:id="@+id/favorite"
+    <!--<ImageButton android:id="@+id/favorite"
         android:layout_width="wrap_content"
         android:layout_height="fill_parent"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:src="@android:drawable/btn_star_big_off"
         android:background="#00ffffff"
+        />-->
+
+        <CheckBox
+            android:id="@+id/favorite"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            style="?android:attr/starStyle"
         />
 
     <TextView

@@ -75,7 +75,7 @@ public class YoutubeConnector {
                 List<Video> videoList = listResponse.getItems();
 
                 if (videoList != null) {
-                    items = getVideoDetails(videoList.iterator(), "SEARCH");
+                    items = getVideoDetailsForSearch(videoList.iterator());
                 }
             }
 
@@ -86,7 +86,42 @@ public class YoutubeConnector {
         }
     }
 
-    public List<VideoItem> getVideoDetails(Iterator<Video> iteratorVideoResults, String mode) throws Exception {
+    public List<VideoItem> getVideoDetailsForSearch(Iterator<Video> iteratorVideoResults) throws Exception {
+        Log.d(Constatnts.TAG, "Came for video making");
+        List<VideoItem> items = new ArrayList<>();
+        List<String> favoriteIds = getFavoriteIds();
+        while (iteratorVideoResults.hasNext()) {
+            Video singleVideo = iteratorVideoResults.next();
+
+            VideoItem item = new VideoItem();
+            item.setTitle(singleVideo.getSnippet().getTitle());
+            item.setDescription("");
+            item.setThumbnailURL(singleVideo.getSnippet().getThumbnails().getDefault().getUrl());
+            item.setId(singleVideo.getId());
+            item.setPublishDate(singleVideo.getSnippet().getPublishedAt().toString());
+            if (singleVideo.getStatistics() != null && singleVideo.getStatistics().getViewCount() != null) {
+                item.setViewCount(singleVideo.getStatistics().getViewCount().intValue());
+                //item.setLikeCount(singleVideo.getStatistics().getLikeCount().intValue());
+                //item.setDislikeCount(singleVideo.getStatistics().getDislikeCount().intValue());
+            } else {
+                item.setViewCount(200);
+            }
+
+
+            if (favoriteIds.contains(item.getId())) {
+                item.setIsFavorite(true);
+            } else {
+                item.setIsFavorite(false);
+            }
+
+
+            items.add(item);
+        }
+        return items;
+    }
+
+    public List<VideoItem> getVideoDetailsForFavorite(Iterator<Video> iteratorVideoResults) throws Exception {
+        Log.d(Constatnts.TAG, "Came for video making");
         List<VideoItem> items = new ArrayList<>();
 
         while (iteratorVideoResults.hasNext()) {
@@ -98,24 +133,35 @@ public class YoutubeConnector {
             item.setThumbnailURL(singleVideo.getSnippet().getThumbnails().getDefault().getUrl());
             item.setId(singleVideo.getId());
             item.setPublishDate(singleVideo.getSnippet().getPublishedAt().toString());
-            item.setViewCount(singleVideo.getStatistics().getViewCount().intValue());
-            item.setLikeCount(singleVideo.getStatistics().getLikeCount().intValue());
-            item.setDislikeCount(singleVideo.getStatistics().getDislikeCount().intValue());
-
-            if (mode.equalsIgnoreCase("SEARCH")) {
-                item.setIsFavorite(false);
+            if (singleVideo.getStatistics() != null && singleVideo.getStatistics().getViewCount() != null) {
+                item.setViewCount(singleVideo.getStatistics().getViewCount().intValue());
+                //item.setLikeCount(singleVideo.getStatistics().getLikeCount().intValue());
+                //item.setDislikeCount(singleVideo.getStatistics().getDislikeCount().intValue());
             } else {
-                item.setIsFavorite(true);
+                item.setViewCount(200);
             }
+
+            item.setIsFavorite(true);
 
             items.add(item);
         }
         return items;
     }
 
+    public List<String> getFavoriteIds() throws Exception {
+        List<PlaylistItem> favoriteVideos = getPlayListItems();
+        List<String> ids = new ArrayList<>();
+
+        for (PlaylistItem item : favoriteVideos) {
+            ids.add(item.getContentDetails().getVideoId());
+        }
+        Log.d(Constatnts.TAG, "Came for fetching favorite list" + favoriteVideos.size());
+        return ids;
+    }
+
     public String getPlayListDetail() throws Exception {
         String playListId = "";
-
+        Log.d(Constatnts.TAG, "Came for fetching channels");
         YouTube.Playlists.List channels = youtube.playlists().list("snippet").setMine(true);
         PlaylistListResponse channelDetail = channels.execute();
 
@@ -127,6 +173,8 @@ public class YoutubeConnector {
                 }
             }
         }
+
+        Log.d(Constatnts.TAG, "Channel size" + channelDetail.getItems().size());
 
         if (playListId.equalsIgnoreCase("")) {
             playListId = createPlayList();
@@ -186,6 +234,7 @@ public class YoutubeConnector {
     }
 
     public List<PlaylistItem> getPlayListItems() throws Exception {
+        Log.d(Constatnts.TAG, "Came for fetching playlist items");
         String playListId = getPlayListDetail();
 
         List<PlaylistItem> playlistItemList = new ArrayList<PlaylistItem>();
@@ -193,7 +242,7 @@ public class YoutubeConnector {
         YouTube.PlaylistItems.List playlistItemRequest =
                 youtube.playlistItems().list("id,contentDetails,snippet");
         playlistItemRequest.setPlaylistId(playListId);
-        playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title,snippet/publishedAt),nextPageToken,pageInfo");
+        playlistItemRequest.setFields("items(id,contentDetails/videoId,snippet/title,snippet/publishedAt),nextPageToken,pageInfo");
 
         String nextToken = "";
 
@@ -204,10 +253,13 @@ public class YoutubeConnector {
             nextToken = playlistItemResult.getNextPageToken();
         } while (nextToken != null);
 
+        Log.d(Constatnts.TAG, "For fetching the playlist against Id:" + playlistItemList.size());
+
         return playlistItemList;
     }
 
     public List<VideoItem> getFavoriteVideos() throws Exception {
+        Log.d(Constatnts.TAG, "Fetch Favorites");
         List<PlaylistItem> videoItems = getPlayListItems();
         List<VideoItem> items = new ArrayList<VideoItem>();
         List<String> videoIds = new ArrayList<String>();
@@ -222,8 +274,9 @@ public class YoutubeConnector {
         VideoListResponse listResponse = listVideosRequest.execute();
         List<Video> videoList = listResponse.getItems();
 
+        Log.d(Constatnts.TAG, "Go For Video Making" + videoList.size());
         if (videoList != null) {
-            items = getVideoDetails(videoList.iterator(), "FAVORITE");
+            items = getVideoDetailsForFavorite(videoList.iterator());
         }
 
         return items;

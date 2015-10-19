@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.cmpe277.lab2.mytube.Utility.Constatnts;
 import com.cmpe277.lab2.mytube.Utility.SessionManager;
 
 
@@ -35,9 +36,11 @@ public class HomeActivity extends AppCompatActivity {
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
+                Log.d(Constatnts.TAG, "My Tab's Position"+tab.getPosition());
             }
 
             @Override
@@ -50,6 +53,10 @@ public class HomeActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    public static String makeFragmentName(int containerViewId, long id) {
+        return "android:switcher:" + containerViewId + ":" + id;
     }
 
     @Override

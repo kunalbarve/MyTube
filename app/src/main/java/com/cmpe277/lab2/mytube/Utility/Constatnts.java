@@ -13,7 +13,7 @@ public class Constatnts {
 
     public static final String APPLICATION_NAME = "MyTube";
 
-    public static final String YOUTUBE_KEY = "AIzaSyAMOxuDarPvl1qTa6MmWATzvnR-tZW0n2w";
+    public static final String YOUTUBE_KEY = "AIzaSyDtDJp32YdBH37ovd0a5Lj88BY1f2INoJ8";
 
     public static final long NUMBER_OF_VIDEOS_RETURNED = 30;
 
