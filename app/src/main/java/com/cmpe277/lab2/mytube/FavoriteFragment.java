@@ -47,7 +47,7 @@ public class FavoriteFragment extends Fragment {
         removeButton = (Button) v.findViewById(R.id.removeButton);
         refreshButton = (Button) v.findViewById(R.id.refresh_button);
 
-        loadFavorites();
+        //loadFavorites();
 
         handler = new Handler();
 
